@@ -1,0 +1,15 @@
+# Pinned working versions (Ubuntu 24.04+ arm64, Python 3.14, verified 2026-10-15).
+# Install: pip install -r requirements.txt && pip install -e .
+# Stems (--stems) need the CPU torch line + demucs (large download).
+numpy==2.5.4
+scipy==1.16.3
+librosa==0.10.2.post1
+soundfile==0.14.0
+pyrubberband==0.4.0
+scenedetect==0.6.5
+opencv-python-headless==5.0.0.93
+# --- optional, only for --stems (Demucs htdemucs, CPU) ---
+# torch must come from the CPU index first (PyPI torch is CUDA-sized);
+# demucs then reuses the already-satisfied torch. Mirror of CI:
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch==2.9.1 torchaudio==2.9.1
+#   pip install demucs==4.0.1

@@ -1,0 +1,48 @@
+name: mashup
+on:
+  workflow_dispatch:
+    inputs:
+      bpm:
+        description: "Master BPM (auto or number)"
+        default: "auto"
+        required: false
+      fps:
+        description: "Video fps"
+        default: "30"
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg rubberband-cli libsndfile1
+          ffmpeg -version | head -2
+      - name: Install Python deps (CPU torch + Demucs for --stems)
+        run: |
+          pip install --upgrade pip
+          pip install --index-url https://download.pytorch.org/whl/cpu torch==2.9.1 torchaudio==2.9.1
+          pip install -r requirements.txt
+          pip install demucs==4.0.1
+          pip install -e .
+          python -c "import librosa, torch, demucs; print('deps ok')"
+      - name: Build mashup + video (stems)
+        run: |
+          mkdir -p out
+          mashup all inputs/songs inputs/clips --out out/ --stems --bpm "${{ inputs.bpm }}" || mashup all inputs/songs inputs/clips --out out/ --stems
+          ls -la out/
+      - name: Verify outputs
+        run: |
+          ffprobe -v error -show_entries format=duration -show_entries stream=codec_type,codec_name,width,height,avg_frame_rate -of default=noprint_wrappers=1 out/mashup.mp4
+          ffprobe -v error -show_entries format=duration -show_entries stream=codec_type,codec_name -of default=noprint_wrappers=1 out/mashup.wav
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mashup-out
+          path: out/
+          retention-days: 3
