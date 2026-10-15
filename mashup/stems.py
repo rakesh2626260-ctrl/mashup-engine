@@ -22,7 +22,15 @@ def separate_songs(paths: list, out_dir: str, model: str = "htdemucs", log=print
         log(f"  demucs [{i+1}/{len(paths)}] {os.path.basename(p)} ({model}, CPU)...")
         # Use the same interpreter running us (venv-safe): bare `python3`
         # may resolve to a system python without demucs installed.
-        cmd = [sys.executable, "-m", "demucs.separate", "-n", model, "-d", "cpu", "--out", out_dir, p]
+        # NOTE: `--mp3` is deliberate, not just size: demucs saves .wav via
+        # torchaudio, whose 2.9+ saver requires torchcodec — whose native
+        # image lib needs CUDA (libnvrtc) and fails to import on CPU-only
+        # boxes (local env and CI runners alike). The .mp3 path uses lameenc
+        # (pure CPU) and demucs loads input via ffmpeg, so torchaudio is
+        # never touched. 320 kbps is transparent for stem mixing.
+        cmd = [sys.executable, "-m", "demucs.separate", "-n", model, "-d", "cpu",
+               "--mp3", "--mp3-bitrate", "320",
+               "--out", out_dir, p]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             raise RuntimeError(f"Demucs failed on {p}:\n{r.stderr[-3000:]}")
@@ -54,8 +62,11 @@ def mixed_stem_audio(song_index: int, plan: dict, stems_root: str, sr: int = SR,
     if d is None:
         # fallback: assume direct layout
         d = os.path.join(stems_root, track)
-    vocals = os.path.join(d, "vocals.wav")
-    novox = os.path.join(d, "no_vocals.wav")
+    # demucs --mp3 writes .mp3 (lameenc, CPU-safe); accept legacy .wav too.
+    vocals = next((os.path.join(d, f"vocals.{e}") for e in ("mp3", "wav")
+                   if os.path.exists(os.path.join(d, f"vocals.{e}"))), os.path.join(d, "vocals.mp3"))
+    novox = next((os.path.join(d, f"no_vocals.{e}") for e in ("mp3", "wav")
+                  if os.path.exists(os.path.join(d, f"no_vocals.{e}"))), os.path.join(d, "no_vocals.mp3"))
     is_peak = (plan["segments"][-1]["song_index"] == song_index)
     parts = []
     if os.path.exists(vocals) and is_peak:

@@ -12,4 +12,6 @@ opencv-python-headless==5.0.0.93
 # torch must come from the CPU index first (PyPI torch is CUDA-sized);
 # demucs then reuses the already-satisfied torch. Mirror of CI:
 #   pip install --index-url https://download.pytorch.org/whl/cpu torch==2.9.1 torchaudio==2.9.1
-#   pip install torchcodec demucs==4.0.1
+#   pip install demucs==4.0.1
+# (No torchcodec needed: we run demucs with --mp3 so it saves via lameenc,
+# never via torchaudio — whose torchcodec dep requires CUDA to even import.)
