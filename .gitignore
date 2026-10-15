@@ -19,5 +19,6 @@ separated/
 venv/
 *.wav
 !test_*.wav
+!inputs/**/*.wav
 out_*/
 *.egg-info/
