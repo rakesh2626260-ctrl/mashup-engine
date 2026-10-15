@@ -29,6 +29,7 @@ def separate_songs(paths: list, out_dir: str, model: str = "htdemucs", log=print
         # (pure CPU) and demucs loads input via ffmpeg, so torchaudio is
         # never touched. 320 kbps is transparent for stem mixing.
         cmd = [sys.executable, "-m", "demucs.separate", "-n", model, "-d", "cpu",
+               "--two-stems", "vocals",
                "--mp3", "--mp3-bitrate", "320",
                "--out", out_dir, p]
         r = subprocess.run(cmd, capture_output=True, text=True)
