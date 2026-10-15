@@ -1,6 +1,7 @@
 """Optional Demucs stems (htdemucs, CPU) behind --stems."""
 import os
 import subprocess
+import sys
 
 import librosa
 import numpy as np
@@ -19,7 +20,9 @@ def separate_songs(paths: list, out_dir: str, model: str = "htdemucs", log=print
     stem_dirs = {}
     for i, p in enumerate(paths):
         log(f"  demucs [{i+1}/{len(paths)}] {os.path.basename(p)} ({model}, CPU)...")
-        cmd = ["python3", "-m", "demucs.separate", "-n", model, "-d", "cpu", "--out", out_dir, p]
+        # Use the same interpreter running us (venv-safe): bare `python3`
+        # may resolve to a system python without demucs installed.
+        cmd = [sys.executable, "-m", "demucs.separate", "-n", model, "-d", "cpu", "--out", out_dir, p]
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
             raise RuntimeError(f"Demucs failed on {p}:\n{r.stderr[-3000:]}")
